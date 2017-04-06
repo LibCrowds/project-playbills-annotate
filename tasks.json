@@ -16,5 +16,41 @@
 				]
 			}
 		]
+	},
+	"dates": {
+		"nameSuffix": "Annotate Dates",
+		"description": "Annotate dates in historic playbills",
+		"tasks": [
+			{
+				"category": "dates",
+				"question": "Annotate each date",
+				"guidance": "Any dates mentioned in notes about upcoming or past events can be ignored.",
+				"inputs": [
+					{
+						"id": "date",
+						"placeholder": "Enter the date",
+						"type": "date"
+					}
+				]
+			}
+		]
+	},
+	"genres": {
+		"nameSuffix": "Annotate Genres",
+		"description": "Annotate genres in historic playbills",
+		"tasks": [
+			{
+				"category": "titles",
+				"question": "Annotate each title",
+				"guidance": "Any titles mentioned in notes about upcoming or past events can be ignored.",
+				"inputs": [
+					{
+						"id": "title",
+						"placeholder": "Enter the title",
+						"type": "text"
+					}
+				]
+			}
+		]
 	}
 }
