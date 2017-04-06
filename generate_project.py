@@ -1,6 +1,6 @@
 #-*- coding: utf8 -*-
 """
-A script for generating the project-playbills-mark projects.
+A script for generating the project-playbills-annotate projects.
 """
 import re
 import os
@@ -30,6 +30,7 @@ def update_shortname(old_project_json, new_project_json):
     here = os.path.dirname(__file__)
     old = old_project_json['short_name']
     new = new_project_json['short_name']
+    
     def replace(fn):
         path_in = os.path.join(here, fn)
         path_out = os.path.join(here, 'gen', fn)
@@ -38,6 +39,7 @@ def update_shortname(old_project_json, new_project_json):
         data_out = data_in.replace(old, new)
         with open(path_out, 'wb') as f:
             f.write(data_out)
+    
     replace('results.html')
     replace('template.html')
 
@@ -45,8 +47,10 @@ def update_shortname(old_project_json, new_project_json):
 def copy_project_files():
     """Copy template, tutorial, long_description and result files to gen."""
     here = os.path.dirname(__file__)
+    
     def copy(fn):
         shutil.copyfile(os.path.join(here, fn), os.path.join(here, 'gen', fn))
+    
     copy('long_description.md')
     copy('template.html')
     copy('tutorial.html')
@@ -97,6 +101,8 @@ def get_json_data(json_data, taskset):
     
     product = list(itertools.product(tasks, input_data))
     data = [dict(row[0].items() + row[1].items()) for row in product]
+    for row in data:
+        row['inputs'] = json.dumps(row['inputs'])
     headers = set(itertools.chain(*[row.keys() for row in data]))
     return headers, data
 
@@ -110,8 +116,15 @@ def get_ark_aleph_data(csv_path, taskset, aleph_sysno):
         input_data = [{'image_ark': r[0], 'aleph_sys_no': r[1]} 
                        for r in l[1:] if r[1] == aleph_sysno]
         
+        if not input_data:
+            msg = 'No CSV data found for system number {}'.format(aleph_sysno)
+            raise ValueError(msg)
+
         product = list(itertools.product(tasks, input_data))
         data = [dict(row[0].items() + row[1].items()) for row in product]
+        for row in data:
+            row['inputs'] = json.dumps(row['inputs'])
+
         headers = set(itertools.chain(*[row.keys() for row in data]))
         return headers, data
 
@@ -140,11 +153,11 @@ def get_record_title(aleph_sysno):
     for i, td in enumerate(rows):
         if td and 'Title &nbsp;' in td[0]:
             return rows[i + 1][0]
-    raise ValueError('No title for that system number could not be found')
+    raise ValueError('System number {0} could not be found'.format(aleph_sysno))
 
 
 def generate():
-    description = '''Generate a project-playbills-mark project.'''
+    description = '''Generate a project-playbills-annotate project.'''
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument('taskset', help="A task set.")
     group = parser.add_mutually_exclusive_group(required=True)
