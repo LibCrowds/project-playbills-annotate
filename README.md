@@ -25,6 +25,7 @@ To generate a new project and push it to the server
 install and configure [pbs](https://github.com/Scifabric/pbs), then:
 
 ```
+pip install -r requirements.txt
 python generate_project.py <task set> [--sysno=<sysno> or --json=<path>]
 cd gen
 pbs create_project
