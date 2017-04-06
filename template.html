@@ -1,0 +1,91 @@
+<style>
+    #openseadragon {
+        font-size: 0.9rem;
+        height: 100%;
+    }
+    .openseadragon-message {
+        color: #FFF;
+    }
+</style>
+<div id="project-content" class="bg-faded d-flex flex-column h-100">
+    <div class="w-100 h-100">
+        <div id="openseadragon">
+        </div>
+    </div>
+</div>
+<script>
+    let lcViewerInterface = new LibCrowdsViewerInterface({ id: 'openseadragon', selectionEnabled: true });
+    
+    /**
+     * Add the question and answer sidebar to the viewer.
+     */
+    function buildTaskSidebar(task) {
+        let elem = $(`<h3 class="lead">${task.info.question}</h3>
+                      <p>${task.info.guidance}</p>
+                      <div class="text-center mb-2">
+    			          <button class="btn btn-outline-success btn-answer mt-2" role="button">
+                              <span class="fa fa-floppy-o mr-1"></span>Save
+                          </button>
+                      </div>`);
+        lcViewerInterface.loadSidebar('Task', elem);
+    }
+    
+    /**
+     * Add the user progress sidebar to the viewer.
+     */
+    function buildProgressSidebar() {
+        pybossa.userProgress('project-playbills-annotate').done(function(data){
+           let pct = Math.round((data.done*100)/data.total);
+               elem = $(`<div class="progress" style="border: 1px solid #fff; background-color: transparent;">
+                             <div class="progress-bar" role="progress-bar" style="width: ${pct.toString()}%; background-color: #fff;"></div>
+                         </div>
+                         <p class="text-center">You have contributed to ${data.done} of ${data.total} tasks.</p>`);
+           lcViewerInterface.loadSidebar('Progress', elem);
+       });
+    }
+
+   /**
+    * Load the task.
+    */
+    pybossa.taskLoaded(function(task, deferred) {
+        deferred.resolve(task);
+    });
+
+    /**
+     * Present the task.
+     */
+    pybossa.presentTask(function(task, deferred) {
+        if (!$.isEmptyObject(task)) {
+			lcViewerInterface.viewer.addHandler('open', function() {
+				if(typeof task.info.region !== 'undefined') {
+					lcViewerInterface.highlight(task.info.region);
+				}
+			});
+			lcViewerInterface.loadImage(task.info.image_ark);
+			lcViewerInterface.removeSidebars();
+            buildTaskSidebar(task);
+            buildProgressSidebar();
+			
+            $('.btn-answer').off('click').on('click', function() {
+                task.answer = {
+                    category: task.info.category,
+                    image_ark: task.info.image_ark,
+                    aleph_sys_no: task.info.aleph_sys_no,
+					parent_task_id: task.info.parent_task_id,
+                    regions: lcViewerInterface.getOverlaysAsImageRectangles()
+                };
+                console.log(JSON.stringify(task.answer, null, 2));
+                pybossa.saveTask(task.id, task.answer).done(function() {
+                    deferred.resolve();
+                    notify('Answer saved, thanks!', 'success');
+                }).fail(function(xhr, status, error) {
+                    logError(new Error(error));
+                });
+            });
+        } else {
+          $("#project-content").hide();
+          notify('Congratulations! You have contributed to all available tasks!', 'success');
+        }
+    });
+    pybossa.run('project-playbills-annotate');
+</script>

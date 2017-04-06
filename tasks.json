@@ -1,0 +1,13 @@
+{
+	"titles": {
+		"nameSuffix": "Annotate Titles",
+		"description": "Annotate titles in historic playbills",
+		"tasks": [
+			{
+				"category": "titles",
+				"question": "Annotate each title",
+				"guidance": "Any notes about upcoming or past events can be ignored."
+			}
+		]
+	}
+}
