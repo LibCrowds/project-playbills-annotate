@@ -6,7 +6,14 @@
 			{
 				"category": "titles",
 				"question": "Annotate each title",
-				"guidance": "Any notes about upcoming or past events can be ignored."
+				"guidance": "Any titles mentioned in notes about upcoming or past events can be ignored.",
+				"inputs": [
+					{
+						"id": "title",
+						"placeholder": "Enter the title",
+						"type": "text"
+					}
+				]
 			}
 		]
 	}
