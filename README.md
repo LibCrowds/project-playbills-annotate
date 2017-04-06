@@ -37,6 +37,14 @@ Now visit the project settings page and update the category, webhook and
 thumbnail. The project is now ready to be published.
 
 
+## Output
+
+Each task run will store the region and transcription data. Once these have been
+compared and processed the final result associated with each task will be
+updated to store the annotations according to the 
+[W3C Annotation Data Model](https://www.w3.org/TR/annotation-model/).
+
+
 ## Bad Ark Identifiers
 
 Some of the ark identifiers in 
