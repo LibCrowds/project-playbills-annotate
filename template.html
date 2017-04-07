@@ -20,10 +20,10 @@
      * Add the question and answer sidebar to the viewer.
      */
     function buildTaskSidebar(task) {
-        let elem = $(`<h3 class="lead">${task.info.question}</h3>
-                      <p>${task.info.guidance}</p>
+        let elem = $(`<h3 id="question" class="lead">${task.info.question}</h3>
+                      <p id="guidance">${task.info.guidance}</p>
                       <div class="text-center mb-2">
-    			          <button class="btn btn-outline-success btn-answer mt-2" role="button">
+    			          <button id="save" class="btn btn-outline-success btn-answer mt-2" role="button">
                               <span class="fa fa-floppy-o mr-1"></span>Save
                           </button>
                       </div>`);
@@ -43,8 +43,58 @@
            lcViewerInterface.loadSidebar('Progress', elem);
        });
     }
+	
+	/**
+	 * Show interactive tutorial on first visit.
+	 */
+	function showTutorial() {
+		let seen  = localStorage.getItem('project-playbills-annotate') === 'seen',
+		    intro = introJs(),
+			opts = {
+				steps: [
+					{
+						intro: "The purpose of tihs tutorial is to annotate specific fields in historic playbills"
+					},
+					{
+						element: "#question",
+						intro: "This is the field that needs to be annotated",
+						position: "left"
+					},
+					{
+						element: "#guidance",
+						intro: "Additional guidance is shown here",
+						position: "left"
+					},
+					{
+						element: "#toggle-selection",
+						intro: "Click this button to toggle area selection",
+						position: "right"
+					},
+					{
+						element: "#save",
+						intro: "When all fields have been annotated, click Save",
+						position: "left"
+					}
+				]
+			}
+			
+			if (seen) {
+				return;
+			}
+			
+			intro.oncomplete(function() {
+				localStorage.setItem('project-playbills-annotate', 'seen');
+			});
+			
+			intro.onexit(function() {
+				localStorage.setItem('project-playbills-annotate', 'seen');
+			});
+			
+			intro.setOptions(opts);
+			intro.start();
+	} 
 
-   /**
+    /**
     * Load the task.
     */
     pybossa.taskLoaded(function(task, deferred) {
@@ -56,11 +106,15 @@
      */
     pybossa.presentTask(function(task, deferred) {
         if (!$.isEmptyObject(task)) {
+			
+			// Highlight any task regions and show tutorial after image loads
 			lcViewerInterface.viewer.addHandler('open', function() {
 				if(typeof task.info.region !== 'undefined') {
 					lcViewerInterface.highlight(task.info.region);
 				}
+				showTutorial();
 			});
+			
 			lcViewerInterface.loadImage(task.info.image_ark);
 			lcViewerInterface.removeSidebars();
             buildTaskSidebar(task);
