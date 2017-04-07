@@ -4,32 +4,15 @@
         height: 100%;
     }
     .openseadragon-message {
-        color: #FFF;
+        color: #fff;
     }
-	#anno-region {
-		max-height: 200px;
+	#anno-img {
+		max-height: 300px;
 	}
-    
-    .introjs-helperLayer {
-        background-color: rgba(255,255,255,.25);
-    }
-    
-    .introjs-button {
-        text-shadow: none;
-    }
-    
-    .introjs-button:hover {
-        color: #fff !important;
-    }
-    
-    .introjs-donebutton {
-        background: #398439;
-        border-color: #398439;
-    }
-    
-    .introjs-donebutton:hover {
-        background: #2A602A;
-        border-color: #398439;
+    .modal-content {
+        color: #fff;
+        background: #111;
+        border: 1px solid #eceeef;
     }
 </style>
 <div id="project-content" class="bg-faded d-flex flex-column h-100">
@@ -50,7 +33,10 @@
 			</div>
 			<div class="modal-body">
                 <div class="text-center">
-                    <img id="anno-region" class="img-thumbnail">
+                    <img id="anno-img" class="img-fluid img-thumbnail" style="display:none;">
+                </div>
+                <div id="anno-loading" class="text-center my-4">
+                    <span class="fa fa-2x fa-spin fa-spinner"></span>
                 </div>
 				<form id="anno-form" class="mt-3">
 				</form>
@@ -72,7 +58,7 @@
         let elem = $(`<h3 id="question" class="lead">${task.info.question}</h3>
                       <p id="guidance">${task.info.guidance}</p>
                       <div class="text-center mb-2">
-                          <button id="save" class="btn btn-success btn-answer mt-2" role="button">
+                          <button id="done" class="btn btn-success btn-answer mt-2" role="button">
                               <span class="fa fa-thumbs-up mr-1"></span>Done
                           </button>
                       </div>`);
@@ -116,31 +102,30 @@
                     },
                     {
                         element: "#toggle-selection",
-                        intro: "Click this button to toggle area selection.",
+                        intro: "This button toggles area selection.",
                         position: "right"
                     },
                     {
-                        element: "#save",
-                        intro: "When all fields have been annotated, click Done.",
-                        position: "left"
+                        element: "#done",
+                        intro: "When all fields have been annotated, click Done."
                     }
                 ]
             }
 
-            if (seen) {
-                return;
-            }
+        if (seen) {
+            return;
+        }
+        
+        intro.oncomplete(function() {
+            localStorage.setItem('project-playbills-annotate', 'seen');
+        });
 
-            intro.oncomplete(function() {
-                localStorage.setItem('project-playbills-annotate', 'seen');
-            });
+        intro.onexit(function() {
+            localStorage.setItem('project-playbills-annotate', 'seen');
+        });
 
-            intro.onexit(function() {
-                localStorage.setItem('project-playbills-annotate', 'seen');
-            });
-
-            intro.setOptions(opts);
-            intro.start();
+        intro.setOptions(opts);
+        intro.start();
     }
 
     /**
@@ -185,19 +170,26 @@
                 }
 
                 // Setup and show the modal
-                $('#anno-region').attr('src', url);
+                $('#anno-modal').imagesLoaded( function() {
+                    $('#anno-img').show();
+                    $('#anno-loading').hide();
+                });
+                $('#anno-img').attr('src', url);
                 $('#anno-form').html('');
-                for (let input of inputs) {
+                for (var i = 0; i < inputs.length; i++) {
                     $('#anno-form').append(
-                        '<label>Title</label>' +
-                        '<input id="' + input.id +
-                        '" class="form-control" name="' + input.id +
-                        '" placeholder="' + input.placeholder +
-                        '" type="' + input.type + '" />'
+                        '<div class="form-group">' +
+                        '<label for="' + inputs[i].id + '">Title</label>' +
+                        '<input id="' + inputs[i].id +
+                        '" class="form-control" name="' + inputs[i].id +
+                        '" placeholder="' + inputs[i].placeholder +
+                        '" type="' + inputs[i].type + 
+                        '" autofocus="' + (i === 0) + '" />' +
+                        '</div>'
                     );
                 }
                 $('#anno-modal').modal('show');
-
+                
                 // Remove overlay if annotation canceled
 				$('#anno-cancel').on('click', function() {
 					lcViewerInterface.viewer.removeOverlay(overlayId);
@@ -205,15 +197,37 @@
 
 				// Add annotation to overlay if confirmed
 				$('#anno-confirm').on('click', function() {
-                    let annoArray = $('#anno-form').serializeArray();
+                    let annoArray  = $('#anno-form').serializeArray();
+                        annotation = {
+                            'fields': annoArray,
+                            'rect': rect,
+                            'url': url
+                        };
+                    
                     for (var i = 0; i < annoArray.length; i++) {
                         overlay.element.setAttribute('title', '<strong>' + annoArray[i].name + ':</strong> ' + annoArray[i].value);
                         overlay.element.setAttribute('data-toggle', 'tooltip');
                         overlay.element.setAttribute('data-html', 'true');
                     }
-                    $('[data-toggle="tooltip"]').tooltip();
+                    $('[data-toggle="tooltip"]').tooltip({
+                        trigger: 'hover'
+                    });
                     $('#anno-modal').modal('hide');
 				});
+                
+                // Reset annotation modal when hidden
+                $('#anno-modal').on('hidden.bs.modal', function (evt) {
+                    $('#anno-img').hide();
+                    $('#anno-img').attr('src', '');
+                    $('#anno-loading').show();
+                    $('#anno-form')[0].reset();
+                });
+            });
+            
+            // Clear tooltips when an overlay is removed from the viewer
+            lcViewerInterface.viewer.addHandler('remove-overlay', function(evt) {
+                console.log(evt);
+                $('[data-toggle="tooltip"]').tooltip('dispose');
             });
 
             lcViewerInterface.loadImage(task.info.image_ark);
@@ -226,10 +240,13 @@
                     category: task.info.category,
                     image_ark: task.info.image_ark,
                     aleph_sys_no: task.info.aleph_sys_no,
-                    parent_task_id: task.info.parent_task_id,
-                    regions: lcViewerInterface.getOverlaysAsImageRectangles()
+                    annotations: lcViewerInterface.viewer.currentOverlays.map(function(overlay) {
+                        return overlay.annotation;
+                    })
                 };
+                
                 console.log(JSON.stringify(task.answer, null, 2));
+                
                 pybossa.saveTask(task.id, task.answer).done(function() {
                     deferred.resolve();
                     notify('Answer saved, thanks!', 'success');
