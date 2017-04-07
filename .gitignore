@@ -1,3 +1,5 @@
-env/*
-gen/*
+env/
+*
+gen/
+*
 sample.json
