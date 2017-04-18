@@ -1,0 +1,110 @@
+<style>
+    #openseadragon {
+        font-size: 0.9rem;
+        height: 100%;
+    }
+    .openseadragon-message {
+        color: #fff;
+    }
+</style>
+<link type="text/css" rel="stylesheet" href="http://annotorious.github.com/latest/annotorious.css" />
+<div id="project-content" class="d-flex flex-column h-100">
+    <div class="w-100 h-100">
+        <div id="openseadragon" />
+    </div>
+</div>
+<script type="text/javascript" src="http://annotorious.github.com/latest/annotorious.min.js"></script>
+<script>
+    let lcViewerInterface = new LibCrowdsViewerInterface({ id: 'openseadragon', confirmBeforeLeaving: false });
+    
+    /**
+     * Add the question and answer sidebar to the viewer.
+     */
+    function buildTaskSidebar() {
+        let elem = $(`<h3 id="question" class="lead">Annotate Titles</h3>
+                      <p id="guidance">Any titles mentioned in notes about upcoming or past events can be ignored.</p>
+                      <div class="text-center mb-2">
+                          <button id="annotate" class="btn btn-info btn-block mt-2" role="button">
+                              Add Annotation
+                          </button>
+                          <button id="done" class="btn btn-success btn-block btn-answer mt-2" role="button">
+                              Done
+                          </button>
+                      </div>`);
+        lcViewerInterface.loadSidebar('Task', elem);
+    }
+
+    // Highlight any task regions and show tutorial after image loads
+    lcViewerInterface.viewer.addHandler('open', function() {
+        var intro = introJs(),
+            opts  = {
+                doneLabel: "OK",
+                exitOnOverlayClick: false,
+                steps: [
+                    {
+                        intro: "The purpose of this project is to annotate specific fields in historic playbills."
+                    },
+                    {
+                        element: "#question",
+                        intro: "This is the field that needs to be annotated.",
+                        position: "left"
+                    },
+                    {
+                        element: "#guidance",
+                        intro: "Any additional guidance is shown here.",
+                        position: "left"
+                    },
+                    {
+                        element: "#annotate",
+                        intro: "Click this button to add an annotation.",
+                        position: "left"
+                    },
+                    {
+                        element: ".annotorious-ol-boxmarker-outer",
+                        intro: "Click and drag to annotate the image.",
+                        position: "left"
+                    },
+                    {
+                        element: "#done",
+                        intro: "When all fields have been annotated, click Done.",
+                        position: "left"
+                    }
+                ]
+            },
+            annotation = {
+                src: "dzi://openseadragon/something",
+                text: "Merchant of Venice",
+                shapes: [{
+                    type: "rect",
+                    geometry: {
+                        x: 0.0932639333439309,
+                        y: 0.6320898333168641,
+                        width: 0.8024792666457579,
+                        height: 0.09893579999742219
+                    }
+                }]
+            };
+        
+        anno.addAnnotation(annotation);
+        intro.setOptions(opts);
+        intro.start();
+        
+        intro.oncomplete(function() {
+            window.location.pathname = 'project/{{ short_name }}/newtask';
+        });
+        
+        intro.onexit(function() {
+            window.location.pathname = 'project/{{ short_name }}/newtask';
+        });
+        
+        $('#annotate').on('click', function() {
+            if(intro._currentStep === 3) {
+                intro.goToStep(5);
+            }
+        });
+    });
+    
+    lcViewerInterface.loadImage('ark:/81055/vdc_100022589157.0x000016');
+    buildTaskSidebar();
+    anno.makeAnnotatable(lcViewerInterface.viewer);
+</script>

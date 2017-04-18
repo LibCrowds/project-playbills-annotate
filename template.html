@@ -6,51 +6,17 @@
     .openseadragon-message {
         color: #fff;
     }
-	#anno-img {
-		max-height: 300px;
-	}
-    .modal-content {
-        color: #fff;
-        background: #111;
-        border: 1px solid #eceeef;
-    }
 </style>
-<div id="project-content" class="bg-faded d-flex flex-column h-100">
+<link type="text/css" rel="stylesheet" href="http://annotorious.github.com/latest/annotorious.css" />
+<div id="project-content" class="d-flex flex-column h-100">
     <div class="w-100 h-100">
-        <div id="openseadragon">
-        </div>
+        <div id="openseadragon" />
     </div>
 </div>
-
-<div id="anno-modal" class="modal fade">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Annotate</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-				</button>
-			</div>
-			<div class="modal-body">
-                <div class="text-center">
-                    <img id="anno-img" class="img-fluid img-thumbnail" style="display:none;">
-                </div>
-                <div id="anno-loading" class="text-center my-4">
-                    <span class="fa fa-2x fa-spin fa-spinner"></span>
-                </div>
-				<form id="anno-form" class="mt-3">
-				</form>
-			</div>
-			<div class="modal-footer">
-				<button id="anno-cancel" type="button" class="btn btn-secondary" data-dismiss="modal" role="button">Cancel</button>
-				<button id="anno-confirm" type="button" class="btn btn-success" role="button">Save</button>
-			</div>
-		</div>
-    </div>
-</div>
+<script type="text/javascript" src="http://annotorious.github.com/latest/annotorious.min.js"></script>
 <script>
-    let lcViewerInterface = new LibCrowdsViewerInterface({ id: 'openseadragon', selectionEnabled: true });
-
+    let lcViewerInterface = new LibCrowdsViewerInterface({ id: 'openseadragon' });
+    
     /**
      * Add the question and answer sidebar to the viewer.
      */
@@ -58,8 +24,11 @@
         let elem = $(`<h3 id="question" class="lead">${task.info.question}</h3>
                       <p id="guidance">${task.info.guidance}</p>
                       <div class="text-center mb-2">
-                          <button id="done" class="btn btn-success btn-answer mt-2" role="button">
-                              <span class="fa fa-thumbs-up mr-1"></span>Done
+                          <button id="annotate" class="btn btn-info btn-block mt-2" role="button">
+                              Add Annotation
+                          </button>
+                          <button id="done" class="btn btn-success btn-block btn-answer mt-2" role="button">
+                              Done
                           </button>
                       </div>`);
         lcViewerInterface.loadSidebar('Task', elem);
@@ -69,7 +38,7 @@
      * Add the user progress sidebar to the viewer.
      */
     function buildProgressSidebar() {
-        pybossa.userProgress('project-playbills-annotate').done(function(data){
+        pybossa.userProgress('{{ short_name }}').done(function(data){
            let pct = Math.round((data.done*100)/data.total);
                elem = $(`<div class="progress" style="border: 1px solid #fff; background-color: transparent;">
                              <div class="progress-bar" role="progress-bar" style="width: ${pct.toString()}%; background-color: #fff;"></div>
@@ -77,55 +46,6 @@
                          <p class="text-center">You have contributed to ${data.done} of ${data.total} tasks.</p>`);
            lcViewerInterface.loadSidebar('Progress', elem);
        });
-    }
-
-    /**
-     * Show interactive tutorial on first visit.
-     */
-    function showTutorial() {
-        let seen  = localStorage.getItem('project-playbills-annotate') === 'seen',
-            intro = introJs(),
-            opts = {
-                steps: [
-                    {
-                        intro: "The purpose of this project is to annotate specific fields in historic playbills."
-                    },
-                    {
-                        element: "#question",
-                        intro: "This is the field that needs to be annotated.",
-                        position: "left"
-                    },
-                    {
-                        element: "#guidance",
-                        intro: "Additional guidance is shown here.",
-                        position: "left"
-                    },
-                    {
-                        element: "#toggle-selection",
-                        intro: "This button toggles area selection.",
-                        position: "right"
-                    },
-                    {
-                        element: "#done",
-                        intro: "When all fields have been annotated, click Done."
-                    }
-                ]
-            }
-
-        if (seen) {
-            return;
-        }
-        
-        intro.oncomplete(function() {
-            localStorage.setItem('project-playbills-annotate', 'seen');
-        });
-
-        intro.onexit(function() {
-            localStorage.setItem('project-playbills-annotate', 'seen');
-        });
-
-        intro.setOptions(opts);
-        intro.start();
     }
 
     /**
@@ -146,103 +66,26 @@
                 if(typeof task.info.region !== 'undefined') {
                     lcViewerInterface.highlight(task.info.region);
                 }
-                showTutorial();
-            });
-
-            // Setup annotation when an overlay is drawn
-            lcViewerInterface.viewer.addHandler('add-overlay', function(evt) {
-                let overlayId = evt.element.getAttribute('id');
-                    overlay   = lcViewerInterface.viewer.getOverlayById(overlayId),
-                    rect      = lcViewerInterface.overlayToImageRect(overlay),
-                    region    = [
-                        Math.round(rect.x),
-                        Math.round(rect.y),
-                        Math.round(rect.width),
-                        Math.round(rect.height)
-                    ],
-				    baseUrl   = 'http://api.bl.uk/image/iiif/',
-                    url       = baseUrl + task.info.image_ark + '/' + region.join(',') + '/full/0/default.jpg',
-                    inputs    = JSON.parse(task.info.inputs);
-
-                // Confirm it's a selection overlay
-                if (overlay.element.className !== 'selection-overlay') {
-                    return;
-                }
-
-                // Setup and show the modal
-                $('#anno-modal').imagesLoaded( function() {
-                    $('#anno-img').show();
-                    $('#anno-loading').hide();
-                });
-                $('#anno-img').attr('src', url);
-                $('#anno-form').html('');
-                for (var i = 0; i < inputs.length; i++) {
-                    $('#anno-form').append(
-                        '<div class="form-group">' +
-                        '<label for="' + inputs[i].id + '">Title</label>' +
-                        '<input id="' + inputs[i].id +
-                        '" class="form-control" name="' + inputs[i].id +
-                        '" placeholder="' + inputs[i].placeholder +
-                        '" type="' + inputs[i].type + 
-                        '" autofocus="' + (i === 0) + '" />' +
-                        '</div>'
-                    );
-                }
-                $('#anno-modal').modal('show');
-                
-                // Remove overlay if annotation canceled
-				$('#anno-cancel').on('click', function() {
-					lcViewerInterface.viewer.removeOverlay(overlayId);
-				});
-
-				// Add annotation to overlay if confirmed
-				$('#anno-confirm').on('click', function() {
-                    let annoArray  = $('#anno-form').serializeArray();
-                        annotation = {
-                            'fields': annoArray,
-                            'rect': rect,
-                            'url': url
-                        };
-                    
-                    for (var i = 0; i < annoArray.length; i++) {
-                        overlay.element.setAttribute('title', '<strong>' + annoArray[i].name + ':</strong> ' + annoArray[i].value);
-                        overlay.element.setAttribute('data-toggle', 'tooltip');
-                        overlay.element.setAttribute('data-html', 'true');
-                    }
-                    $('[data-toggle="tooltip"]').tooltip({
-                        trigger: 'hover'
-                    });
-                    $('#anno-modal').modal('hide');
-				});
-                
-                // Reset annotation modal when hidden
-                $('#anno-modal').on('hidden.bs.modal', function (evt) {
-                    $('#anno-img').hide();
-                    $('#anno-img').attr('src', '');
-                    $('#anno-loading').show();
-                    $('#anno-form')[0].reset();
-                });
-            });
-            
-            // Clear tooltips when an overlay is removed from the viewer
-            lcViewerInterface.viewer.addHandler('remove-overlay', function(evt) {
-                console.log(evt);
-                $('[data-toggle="tooltip"]').tooltip('dispose');
             });
 
             lcViewerInterface.loadImage(task.info.image_ark);
             lcViewerInterface.removeSidebars();
             buildTaskSidebar(task);
             buildProgressSidebar();
+            anno.destroy();
+            anno.makeAnnotatable(lcViewerInterface.viewer);
+            
+            // Toggle annotation
+            $('#annotate').off('click').on('click', function() {
+                anno.activateSelector();
+            });
 
             $('.btn-answer').off('click').on('click', function() {
                 task.answer = {
                     category: task.info.category,
                     image_ark: task.info.image_ark,
                     aleph_sys_no: task.info.aleph_sys_no,
-                    annotations: lcViewerInterface.viewer.currentOverlays.map(function(overlay) {
-                        return overlay.annotation;
-                    })
+                    annotations: anno.getAnnotations()
                 };
                 
                 console.log(JSON.stringify(task.answer, null, 2));
@@ -259,5 +102,5 @@
           notify('Congratulations! You have contributed to all available tasks!', 'success');
         }
     });
-    pybossa.run('project-playbills-annotate');
+    pybossa.run('{{ short_name }}');
 </script>

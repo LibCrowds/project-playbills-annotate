@@ -40,13 +40,13 @@
 		"description": "Annotate genres in historic playbills",
 		"tasks": [
 			{
-				"category": "titles",
-				"question": "Annotate each title",
+				"category": "genre",
+				"question": "Annotate each genre",
 				"guidance": "Any titles mentioned in notes about upcoming or past events can be ignored.",
 				"inputs": [
 					{
-						"id": "title",
-						"placeholder": "Enter the title",
+						"id": "genre",
+						"placeholder": "Enter the genre",
 						"type": "text"
 					}
 				]
