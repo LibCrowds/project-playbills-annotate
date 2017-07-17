@@ -3,6 +3,7 @@
 Playbills annotation project for LibCrowds, designed for use with the 
 [libcrowds-bs4-pybossa-theme](https://github.com/LibCrowds/libcrowds-bs4-pybossa-theme).
 
+**:warning: DEPRECATED: Replaced by [project-iiif-annotate](https://github.com/LibCrowds/project-iiif-annotate)**
 
 ## Creating a new project
 
